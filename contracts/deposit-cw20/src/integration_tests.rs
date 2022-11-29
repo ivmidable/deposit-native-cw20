@@ -2,7 +2,7 @@
 mod tests {
     use crate::helpers::DepositContract;
     use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, Cw20HookMsg, Cw20DepositResponse, DepositResponse};
-    use cosmwasm_std::{Addr, Coin, Empty, Uint128, to_binary, BankQuery, BankMsg, coin};
+    use cosmwasm_std::{Addr, Coin, Empty, Uint128, to_binary, BankQuery, BankMsg, coin, WasmMsg};
     use cw20::{Cw20Contract, Cw20Coin, BalanceResponse};
     use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
     use cw20_base::msg::InstantiateMsg as Cw20InstantiateMsg;
@@ -159,6 +159,29 @@ mod tests {
 
     #[test]
     fn deposit_cw20_and_withdraw_after_expiration_has_passed() {
+        let (mut app, deposit_id, cw20_id) = store_code();
+        let deposit_contract = deposit_instantiate(&mut app, deposit_id);
+        let cw20_contract = cw_20_instantiate(&mut app, cw20_id);
+
+        let hook_msg = Cw20HookMsg::Deposit { };
+
+        let msg = Cw20ExecuteMsg::Send { contract: deposit_contract.addr().to_string(), amount: Uint128::from(500u64), msg: to_binary(&hook_msg).unwrap() };
+        let cosmos_msg = cw20_contract.call(msg).unwrap();
+        app.execute(Addr::unchecked(USER), cosmos_msg).unwrap();
+
+        let mut block = app.block_info(); 
+        block.height = app.block_info().height.checked_add(20).unwrap();
+        app.set_block(block);
+
+        let msg = ExecuteMsg::WithdrawCw20 {address:cw20_contract.addr().to_string(), amount:Uint128::from(500u64)};
+
+        let execute_msg = WasmMsg::Execute { contract_addr: deposit_contract.addr().to_string(), msg: to_binary(&msg).unwrap(), funds: vec![] };
+        app.execute(Addr::unchecked(USER), execute_msg.into()).unwrap();
+
+    }
+
+    #[test]
+    fn mint_then_deposit_nft() {
         unimplemented!()
     }
 

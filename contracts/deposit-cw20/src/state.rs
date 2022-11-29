@@ -21,8 +21,18 @@ pub struct Deposits {
     pub coins: Coin
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Cw721Deposits {
+    pub owner: String,
+    pub contract:String,
+    pub token_id:String
+}
+
 //key is address, denom
 pub const DEPOSITS: Map<(&str, &str), Deposits> = Map::new("deposits");
 
 //key is address, cw20 contract address
 pub const CW20_DEPOSITS: Map<(&str, &str), Cw20Deposits> = Map::new("cw20deposits");
+
+//contract, owner, token_id
+pub const CW721_DEPOSITS: Map<(&str, &str, &str), Cw721Deposits> = Map::new("cw721deposits");

@@ -6,6 +6,10 @@ members = ["contracts/*"]
 codegen-units = 1
 incremental = false
 
+[profile.release.package.nft]
+codegen-units = 1
+incremental = false
+
 [profile.release.package.deposit-cw20]
 codegen-units = 1
 incremental = false
