@@ -181,7 +181,7 @@ mod tests {
     }
 
     #[test]
-    fn mint_then_deposit_nft() {
+    fn mint_then_deposit_nft_then_withdraw_nft_back_to_owner() {
         unimplemented!()
     }
 
