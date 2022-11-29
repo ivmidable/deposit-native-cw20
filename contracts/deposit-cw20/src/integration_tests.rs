@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::helpers::DepositContract;
-    use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, Cw20HookMsg, Cw20DepositResponse, DepositResponse};
+    use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, Cw20HookMsg, Cw20DepositResponse, DepositResponse, Cw721DepositResponse};
     use cosmwasm_std::{Addr, Coin, Empty, Uint128, to_binary, BankQuery, BankMsg, coin, WasmMsg};
     use cw20::{Cw20Contract, Cw20Coin, BalanceResponse};
     use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
@@ -10,6 +10,10 @@ mod tests {
     use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
 
     use cw20_example::{self};
+
+    use cw721::OwnerOfResponse;
+    use nft::helpers::NftContract;
+    use nft::{self};
 
     pub fn contract_deposit_cw20() -> Box<dyn Contract<Empty>> {
         let contract = ContractWrapper::new(
@@ -25,6 +29,15 @@ mod tests {
             cw20_example::contract::execute,
             cw20_example::contract::instantiate,
             cw20_example::contract::query,
+        );
+        Box::new(contract)
+    }
+
+    pub fn contract_nft() -> Box<dyn Contract<Empty>> {
+        let contract = ContractWrapper::new(
+            nft::contract::entry::execute,
+            nft::contract::entry::instantiate,
+            nft::contract::entry::query,
         );
         Box::new(contract)
     }
@@ -49,12 +62,12 @@ mod tests {
         })
     }
 
-    fn store_code() -> (App, u64, u64) {
+    fn store_code() -> (App, u64, u64, u64) {
         let mut app = mock_app();
-        
         let deposit_id = app.store_code(contract_deposit_cw20());
         let cw20_id = app.store_code(contract_cw20());
-        (app, deposit_id, cw20_id)
+        let cw721_id = app.store_code(contract_nft());
+        (app, deposit_id, cw20_id, cw721_id)
     }
 
     fn deposit_instantiate(app: &mut App, deposit_id: u64) -> DepositContract {
@@ -88,6 +101,20 @@ mod tests {
     Cw20Contract(cw20_contract_address)
     }
 
+    pub fn cw721_instantiate(app:&mut App, nft_id:u64, name:String, symbol:String, minter:String) -> NftContract {
+        let contract = app
+            .instantiate_contract(
+                nft_id,
+                Addr::unchecked(ADMIN),
+                &nft::contract::InstantiateMsg { name, symbol, minter },
+                &[],
+                "nft",
+                None,
+            )
+            .unwrap();
+        NftContract(contract)
+    }
+
     fn get_deposits(app: &App, deposit_contract: &DepositContract) -> DepositResponse {
         app.wrap()
             .query_wasm_smart(deposit_contract.addr(), &QueryMsg::Deposits { address: USER.to_string() })
@@ -110,10 +137,21 @@ mod tests {
             .unwrap()
     }
 
+    fn get_cw721_deposits(app: &App, deposit_contract: &DepositContract, nft_contract:&NftContract) -> Cw721DepositResponse {
+        app.wrap()
+            .query_wasm_smart(deposit_contract.addr(), &QueryMsg::Cw721Deposits { address: USER.to_string(), contract: nft_contract.addr().to_string() })
+            .unwrap()
+    }
+
+    fn get_owner_of(app: &App, nft_contract:&NftContract, token_id:String) -> OwnerOfResponse {
+        app.wrap()
+            .query_wasm_smart(nft_contract.addr(), &nft::contract::QueryMsg::OwnerOf { token_id, include_expired: None })
+            .unwrap()
+    }
 
     #[test]
     fn deposit_native() {
-        let (mut app, deposit_id, cw20_id) = store_code();
+        let (mut app, deposit_id, _cw20_id, _cw721_id) = store_code();
         let deposit_contract = deposit_instantiate(&mut app, deposit_id);
 
         let balance = get_balance(&app, USER.to_string(), "denom".to_string());
@@ -133,7 +171,7 @@ mod tests {
 
     #[test]
     fn deposit_cw20() {
-        let (mut app, deposit_id, cw20_id) = store_code();
+        let (mut app, deposit_id, cw20_id, _cw721_id) = store_code();
         let deposit_contract = deposit_instantiate(&mut app, deposit_id);
         let cw20_contract = cw_20_instantiate(&mut app, cw20_id);
 
@@ -159,7 +197,7 @@ mod tests {
 
     #[test]
     fn deposit_cw20_and_withdraw_after_expiration_has_passed() {
-        let (mut app, deposit_id, cw20_id) = store_code();
+        let (mut app, deposit_id, cw20_id, _cw721_id) = store_code();
         let deposit_contract = deposit_instantiate(&mut app, deposit_id);
         let cw20_contract = cw_20_instantiate(&mut app, cw20_id);
 
