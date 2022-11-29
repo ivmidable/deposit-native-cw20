@@ -1,4 +1,5 @@
 use cosmwasm_std::Uint128;
+use cw721::Cw721ReceiveMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use cw20::Cw20ReceiveMsg;
@@ -17,6 +18,7 @@ pub enum ExecuteMsg {
     Deposit { },
     Withdraw { amount:u128, denom:String },
     Receive(Cw20ReceiveMsg),
+    ReceiveNft(Cw721ReceiveMsg),
     WithdrawCw20 { address: String, amount:Uint128 },
     WithdrawNft { contract: String, token_id: String },
 }

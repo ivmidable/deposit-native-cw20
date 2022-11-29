@@ -38,6 +38,7 @@ pub fn execute(
         ExecuteMsg::Deposit { } => execute_deposit(deps, info),
         ExecuteMsg::Withdraw { amount, denom } => execute_withdraw(deps, info, amount, denom),
         ExecuteMsg::Receive(cw20_msg) => receive_cw20(deps, env, info, cw20_msg),
+        ExecuteMsg::ReceiveNft(cw721_msg) => receive_cw721(deps, env, info, cw721_msg),
         ExecuteMsg::WithdrawCw20 { address, amount } => execute_cw20_withdraw(deps, env, info, address, amount),
         ExecuteMsg::WithdrawNft { contract, token_id } => execute_cw721_withdraw(deps, info, contract, token_id)
     }
