@@ -210,7 +210,7 @@ pub fn execute_cw20_withdraw(
 
 
 pub fn execute_cw721_deposit(deps: DepsMut, info: MessageInfo, owner:String, token_id:String) -> Result<Response, ContractError> {
-    let cw721_contract = info.sender.clone().into_string();
+    let cw721_contract_address = info.sender.clone().into_string();
     unimplemented!()
 }
 
