@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::helpers::DepositContract;
-    use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, Cw20HookMsg, Cw20DepositResponse, DepositResponse, Cw721DepositResponse};
+    use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, Cw20HookMsg, Cw20DepositResponse, DepositResponse, Cw721DepositResponse, Cw721HookMsg};
     use cosmwasm_std::{Addr, Coin, Empty, Uint128, to_binary, BankQuery, BankMsg, coin, WasmMsg};
     use cw20::{Cw20Contract, Cw20Coin, BalanceResponse};
     use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
@@ -137,9 +137,15 @@ mod tests {
             .unwrap()
     }
 
-    fn get_cw721_deposits(app: &App, deposit_contract: &DepositContract, nft_contract:&NftContract) -> Cw721DepositResponse {
+    fn get_cw721_deposits_by_contract(app: &App, deposit_contract: &DepositContract, nft_contract:&NftContract) -> Cw721DepositResponse {
         app.wrap()
-            .query_wasm_smart(deposit_contract.addr(), &QueryMsg::Cw721Deposits { address: USER.to_string(), contract: nft_contract.addr().to_string() })
+            .query_wasm_smart(deposit_contract.addr(), &QueryMsg::Cw721DepositsByContract { contract_addr: nft_contract.addr().to_string() })
+            .unwrap()
+    }
+
+    fn get_cw721_deposits_by_owner(app: &App, deposit_contract: &DepositContract, owner:String) -> Cw721DepositResponse {
+        app.wrap()
+            .query_wasm_smart(deposit_contract.addr(), &QueryMsg::Cw721DepositsByOwner { address: owner })
             .unwrap()
     }
 
@@ -220,7 +226,42 @@ mod tests {
 
     #[test]
     fn mint_then_deposit_nft_then_withdraw_nft_back_to_owner() {
-        unimplemented!()
+        let (mut app, deposit_id, _cw20_id, cw721_id) = store_code();
+        let deposit_contract = deposit_instantiate(&mut app, deposit_id);
+        let cw721_contract = cw721_instantiate(&mut app, cw721_id, "NFT".to_string(), "NFT".to_string(), USER.to_string());
+
+        //mint NFT to User
+        let mint_msg = nft::contract::MintMsg{token_id:"0".to_string(), owner:USER.to_string(), token_uri:Some("url".to_string()), extension:None };
+        let msg = nft::contract::ExecuteMsg::Mint(mint_msg);
+        let cosmos_msg = cw721_contract.call(msg).unwrap();
+        app.execute(Addr::unchecked(USER), cosmos_msg).unwrap();
+
+        //check to see if User is the owner.
+        let owner = get_owner_of(&app, &cw721_contract, "0".to_string());
+        assert_eq!(owner.owner, USER.to_string());
+        println!("{:?}", owner);
+
+        //deposit NFT to Deposit Contract
+        let hook_msg = Cw721HookMsg::Deposit { };
+        let msg = nft::contract::ExecuteMsg::SendNft { contract: deposit_contract.addr().to_string(), token_id: "0".to_string(), msg: to_binary(&hook_msg).unwrap() };
+        let cosmos_msg = cw721_contract.call(msg).unwrap();
+        app.execute(Addr::unchecked(USER), cosmos_msg).unwrap();
+
+        //check to see if Deposit Contract is the owner.
+        let owner = get_owner_of(&app, &cw721_contract, "0".to_string());
+        assert_eq!(owner.owner, deposit_contract.addr().to_string());
+        println!("{:?}", owner);
+
+
+        //withdraw NFT from Deposit Contract
+        let msg = ExecuteMsg::WithdrawNft {contract_addr:cw721_contract.addr().to_string(), token_id:"0".to_string()};
+        let execute_msg = WasmMsg::Execute { contract_addr: deposit_contract.addr().to_string(), msg: to_binary(&msg).unwrap(), funds: vec![] };
+        app.execute(Addr::unchecked(USER), execute_msg.into()).unwrap();
+
+        //check to see if User is the owner.
+        let owner = get_owner_of(&app, &cw721_contract, "0".to_string());
+        assert_eq!(owner.owner, USER.to_string());
+        println!("{:?}", owner);
     }
 
 

@@ -20,7 +20,7 @@ pub enum ExecuteMsg {
     Receive(Cw20ReceiveMsg),
     ReceiveNft(Cw721ReceiveMsg),
     WithdrawCw20 { address: String, amount:Uint128 },
-    WithdrawNft { contract: String, token_id: String },
+    WithdrawNft { contract_addr: String, token_id: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -28,7 +28,8 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     Deposits { address: String },
     Cw20Deposits { address: String },
-    Cw721Deposits { address: String, contract: String },
+    Cw721DepositsByContract {contract_addr: String },
+    Cw721DepositsByOwner { address: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
