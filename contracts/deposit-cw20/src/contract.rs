@@ -4,16 +4,18 @@ use cosmwasm_std::{
     coin, from_binary, to_binary, BankMsg, Binary, CustomMsg, Deps, DepsMut, Empty, Env,
     MessageInfo, Order, Response, StdResult, Uint128, WasmMsg,
 };
+
 use cw2::set_contract_version;
 use cw20::{Cw20ReceiveMsg, Expiration};
 use cw20_base;
 use cw721::Cw721ReceiveMsg;
+use cw_utils;
 // use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::msg::{
     Cw20DepositResponse, Cw20HookMsg, Cw721DepositResponse, Cw721HookMsg, DepositResponse,
-    ExecuteMsg, InstantiateMsg, QueryMsg,
+    ExecuteMsg, InstantiateMsg, QueryMsg, MigrateMsg,
 };
 use crate::state::{Cw20Deposits, Cw721Deposits, Deposit, Deposits};
 use crate::traits::{DepositExecute, DepositQuery};
@@ -350,6 +352,13 @@ where
         let deposits = res?;
         Ok(Cw721DepositResponse { deposits })
     }
+
+    fn query_total_cw20_deposits_changelog(&self, deps: Deps) -> StdResult<Vec<(u64, Option<u64>)>>{
+        let res: StdResult<Vec<_>> = self
+            .total_cw20_deposits.changelog().range(deps.storage, None, None, Order::Ascending).collect();
+        let changelog = res?;
+        Ok( changelog.into_iter().map(|(k, v)| (k, v.old)).collect() )
+    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -367,6 +376,11 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&contract.query_cw721_by_owner(deps, address)?)
         }
     }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    unimplemented!()
 }
 
 pub fn receive_cw20(

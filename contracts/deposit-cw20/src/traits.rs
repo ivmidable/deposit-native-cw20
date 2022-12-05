@@ -26,4 +26,5 @@ pub trait DepositQuery {
     fn query_cw20_deposits(&self, deps: Deps, address: String) -> StdResult<Cw20DepositResponse>;
     fn query_cw721_by_contract(&self, deps: Deps, contract_addr:String) -> StdResult<Cw721DepositResponse>;
     fn query_cw721_by_owner(&self, deps: Deps, address: String) -> StdResult<Cw721DepositResponse>;
+    fn query_total_cw20_deposits_changelog(&self, deps: Deps) -> StdResult<Vec<(u64, Option<u64>)>>;
 }

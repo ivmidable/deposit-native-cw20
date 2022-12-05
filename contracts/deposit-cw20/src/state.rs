@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use cosmwasm_std::{Uint128, Addr, Coin, BlockInfo, CustomMsg};
 use cw_storage_plus::{Map, Item, SnapshotItem, IndexedSnapshotMap, SnapshotMap, Strategy, UniqueIndex, Index, IndexList, MultiIndex, IndexedMap};
 
-
 pub struct Deposit<'a, C>
 where
     C: CustomMsg
