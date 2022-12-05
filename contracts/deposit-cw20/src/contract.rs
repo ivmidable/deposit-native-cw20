@@ -55,7 +55,6 @@ where
         {
             Ok(mut deposit) => {
                 //add coins to their account
-                deposit.coins.amount += d_coins.amount;
                 deposit.coins.amount = deposit.coins.amount.checked_add(d_coins.amount).unwrap();
                 deposit.count = deposit.count.checked_add(1).unwrap();
                 self.deposits
